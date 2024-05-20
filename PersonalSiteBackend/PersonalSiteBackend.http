@@ -1,0 +1,6 @@
+@PersonalSiteBackend_HostAddress = http://localhost:5233
+
+GET {{PersonalSiteBackend_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
