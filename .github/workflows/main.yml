@@ -32,6 +32,6 @@ jobs:
         run: |
           aws deploy create-deployment \
             --application-name CodeDeploy_PersonalSiteBackend \
-            --deployment-group-name PersonalSiteBackendGroup \
+            --deployment-group-name PersonalSiteBackend \
             --github-location repository=lmhseos/LucasHenryPortifilioSiteBackend,commitId=${{ github.sha }} \
             --region ${{ env.AWS_REGION }}
