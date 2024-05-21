@@ -1,6 +1,6 @@
-﻿namespace RAGSystemAPI.DTO;
+﻿namespace PersonalSiteBackend.Dto;
 
-public class AskQuestionDTO
+public class AskQuestionDto
 {
     public string Text { get; set; }
 }
