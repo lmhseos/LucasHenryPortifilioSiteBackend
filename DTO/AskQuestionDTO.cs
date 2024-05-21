@@ -1,4 +1,4 @@
-﻿namespace PersonalSiteBackend.DTO;
+﻿namespace PersonalSiteBackend.Dto;
 
 public class AskQuestionDto
 {
