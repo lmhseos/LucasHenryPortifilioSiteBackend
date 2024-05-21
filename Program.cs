@@ -1,16 +1,24 @@
+using Microsoft.EntityFrameworkCore;
+using PersonalSiteBackend.Data;
 using RAGSystemAPI.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
 builder.Services.AddControllers();
-
-// Register RAGService
-builder.Services.AddSingleton<RAGService>();
+builder.Services.AddDbContext<RagDbContext>(options =>
+    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddScoped<RagService>();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<RagDbContext>();
+    dbContext.Database.Migrate();
+    var ragService = scope.ServiceProvider.GetRequiredService<RagService>();
+    await ragService.LoadAllDataAsync();
+}
+
 app.UseHttpsRedirection();
 
 app.UseAuthorization();
