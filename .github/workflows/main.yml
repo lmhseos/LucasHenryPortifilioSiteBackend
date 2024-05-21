@@ -31,7 +31,7 @@ jobs:
           AWS_REGION: "us-west-2" # Adjust this to your AWS region
         run: |
           aws deploy create-deployment \
-            --application-name my-application \
-            --deployment-group-name my-deployment-group \
-            --github-location repository=my-repo,commitId=${{ github.sha }} \
+            --application-name CodeDeploy_PersonalSiteBackend \
+            --deployment-group-name PersonalSiteBackendGroup \
+            --github-location repository=https://github.com/lmhseos/LucasHenryPortifilioSiteBackend.git,commitId=${{ github.sha }} \
             --region ${{ env.AWS_REGION }}
