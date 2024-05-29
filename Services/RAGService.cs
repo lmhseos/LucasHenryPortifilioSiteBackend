@@ -1,8 +1,4 @@
-﻿using System;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
-using dotenv.net;
+﻿using dotenv.net;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.KernelMemory;
 using PersonalSiteBackend.Data;
