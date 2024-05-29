@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Cors;
+using Microsoft.AspNetCore.Mvc;
 using RAGSystemAPI.Services;
 using PersonalSiteBackend.Dto;
 using PersonalSiteBackend.DTO;
@@ -25,6 +26,7 @@ namespace RAGSystemAPI.Controllers
         }
 
         [HttpPost("ask")]
+        [EnableCors("AllowSpecificOrigin")]
         public async Task<IActionResult> AskQuestion([FromBody] AskQuestionDto questionDto)
         {
             var result = await ragService.AskAsync(questionDto.Text);

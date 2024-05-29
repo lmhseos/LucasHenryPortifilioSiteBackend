@@ -118,12 +118,6 @@ dist/
 secrets.json
 appsettings*.json
 
-# Ignore database files
-*.mdf
-*.ldf
-*.ndf
-*.sdf
-
 # Ignore code coverage
 coverage/
 
