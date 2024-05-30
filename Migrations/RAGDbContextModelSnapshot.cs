@@ -9,14 +9,14 @@ using PersonalSiteBackend.Data;
 namespace PersonalSiteBackend.Migrations
 {
     [DbContext(typeof(RagDbContext))]
-    partial class RAGDbContextModelSnapshot : ModelSnapshot
+    partial class RagDbContextModelSnapshot : ModelSnapshot
     {
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.5");
 
-            modelBuilder.Entity("RAGSystemAPI.Models.Document", b =>
+            modelBuilder.Entity("PersonalSiteBackend.Models.Document", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -35,7 +35,7 @@ namespace PersonalSiteBackend.Migrations
                     b.ToTable("Documents");
                 });
 
-            modelBuilder.Entity("RAGSystemAPI.Models.Question", b =>
+            modelBuilder.Entity("PersonalSiteBackend.Models.Question", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()

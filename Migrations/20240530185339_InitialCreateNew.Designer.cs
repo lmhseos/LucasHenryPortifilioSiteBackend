@@ -10,8 +10,8 @@ using PersonalSiteBackend.Data;
 namespace PersonalSiteBackend.Migrations
 {
     [DbContext(typeof(RagDbContext))]
-    [Migration("20240520194140_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20240530185339_InitialCreateNew")]
+    partial class InitialCreateNew
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -19,7 +19,7 @@ namespace PersonalSiteBackend.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.5");
 
-            modelBuilder.Entity("RAGSystemAPI.Models.Document", b =>
+            modelBuilder.Entity("PersonalSiteBackend.Models.Document", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -38,7 +38,7 @@ namespace PersonalSiteBackend.Migrations
                     b.ToTable("Documents");
                 });
 
-            modelBuilder.Entity("RAGSystemAPI.Models.Question", b =>
+            modelBuilder.Entity("PersonalSiteBackend.Models.Question", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()

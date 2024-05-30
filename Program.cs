@@ -26,11 +26,14 @@ builder.Services.AddScoped<RagService>();
 
 var app = builder.Build();
 
-// Apply database migrations and load initial data
+// Ensure the database is created and apply migrations
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<RagDbContext>();
-    dbContext.Database.Migrate();
+    dbContext.Database.EnsureDeleted(); // Delete the database if it exists
+    dbContext.Database.EnsureCreated(); // Create the database and __EFMigrationsHistory table
+    dbContext.Database.Migrate(); // Apply migrations
+    
     var ragService = scope.ServiceProvider.GetRequiredService<RagService>();
     await ragService.LoadAllDataAsync();
 }
