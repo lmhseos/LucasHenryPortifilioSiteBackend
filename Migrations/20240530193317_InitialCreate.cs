@@ -1,19 +1,23 @@
 ﻿using Microsoft.EntityFrameworkCore.Migrations;
 
-namespace RAGSystemAPI.Migrations
+#nullable disable
+
+namespace PersonalSiteBackend.Migrations
 {
+    /// <inheritdoc />
     public partial class InitialCreate : Migration
     {
+        /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
                 name: "Documents",
                 columns: table => new
                 {
-                    Id = table.Column<int>(nullable: false)
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
-                    Name = table.Column<string>(nullable: false),
-                    Content = table.Column<string>(nullable: true)
+                    Name = table.Column<string>(type: "TEXT", nullable: false),
+                    Content = table.Column<string>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -24,11 +28,11 @@ namespace RAGSystemAPI.Migrations
                 name: "Questions",
                 columns: table => new
                 {
-                    Id = table.Column<int>(nullable: false)
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
-                    Text = table.Column<string>(nullable: false),
-                    Answer = table.Column<string>(nullable: true),
-                    Sources = table.Column<string>(nullable: true)
+                    Text = table.Column<string>(type: "TEXT", nullable: false),
+                    Answer = table.Column<string>(type: "TEXT", nullable: false),
+                    Sources = table.Column<string>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -36,6 +40,7 @@ namespace RAGSystemAPI.Migrations
                 });
         }
 
+        /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(

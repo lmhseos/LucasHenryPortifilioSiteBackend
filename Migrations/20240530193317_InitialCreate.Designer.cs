@@ -10,8 +10,8 @@ using PersonalSiteBackend.Data;
 namespace PersonalSiteBackend.Migrations
 {
     [DbContext(typeof(RagDbContext))]
-    [Migration("20240530185339_InitialCreateNew")]
-    partial class InitialCreateNew
+    [Migration("20240530193317_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
