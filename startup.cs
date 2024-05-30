@@ -74,6 +74,12 @@ public class Startup
             
             var ragService = scope.ServiceProvider.GetRequiredService<RagService>();
             ragService.LoadAllDataAsync().Wait();
+            
+            using (var serviceScope = app.ApplicationServices.GetService<IServiceScopeFactory>().CreateScope())
+            {
+                var context = serviceScope.ServiceProvider.GetRequiredService<RagDbContext>();
+                context.Database.Migrate();
+            }
         }
     }
 }
