@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using PersonalSiteBackend.Data;
 using RAGSystemAPI.Services;
+using System;
 
 public class Startup
 {
@@ -32,9 +33,13 @@ public class Startup
 
         services.AddControllers();
 
+        // Log the connection string
+        var connectionString = Configuration.GetConnectionString("DefaultConnection");
+        Console.WriteLine($"Using connection string: {connectionString}");
+
         // Configure DbContext with connection string
         services.AddDbContext<RagDbContext>(options =>
-            options.UseSqlite(Configuration.GetConnectionString("DefaultConnection")));
+            options.UseSqlite(connectionString));
 
         services.AddScoped<RagService>();
     }
