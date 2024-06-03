@@ -8,7 +8,7 @@ namespace PersonalSiteBackend.Data
         public RagDbContext(DbContextOptions<RagDbContext> options) : base(options)
         {
         }
-
+        
         public DbSet<Document> Documents { get; set; }
         public DbSet<Question> Questions { get; set; }
         

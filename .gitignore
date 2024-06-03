@@ -116,7 +116,6 @@ dist/
 
 # Ignore the secrets file (if present)
 secrets.json
-appsettings*.json
 
 # Ignore code coverage
 coverage/

@@ -1,61 +1,25 @@
-using Microsoft.EntityFrameworkCore;
-using PersonalSiteBackend.Data;
-using RAGSystemAPI.Services;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
 
-var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
-
-var builder = WebApplication.CreateBuilder(args);
-
-// Add services to the container
-builder.Services.AddCors(options =>
+public class Program
 {
-    options.AddPolicy(name: MyAllowSpecificOrigins,
-        policy =>
-        {
-            policy.WithOrigins("http://localhost:5173")
-                .AllowAnyHeader()
-                .AllowAnyMethod()
-                .AllowCredentials(); // Include AllowCredentials if necessary
-        });
-});
+    public static void Main(string[] args)
+    {
+        CreateHostBuilder(args).Build().Run();
+    }
 
-builder.Services.AddControllers();
-builder.Services.AddDbContext<RagDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
-builder.Services.AddScoped<RagService>();
-
-var app = builder.Build();
-
-// Apply database migrations and load initial data
-using (var scope = app.Services.CreateScope())
-{
-    var dbContext = scope.ServiceProvider.GetRequiredService<RagDbContext>();
-    dbContext.Database.Migrate();
-    var ragService = scope.ServiceProvider.GetRequiredService<RagService>();
-    await ragService.LoadAllDataAsync();
+    public static IHostBuilder CreateHostBuilder(string[] args) =>
+        Host.CreateDefaultBuilder(args)
+            .ConfigureAppConfiguration((hostingContext, config) =>
+            {
+                var env = hostingContext.HostingEnvironment;
+                config.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+                    .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true, reloadOnChange: true);
+                config.AddEnvironmentVariables();
+            })
+            .ConfigureWebHostDefaults(webBuilder =>
+            {
+                webBuilder.UseStartup<Startup>();
+            });
 }
-
-// Configure the HTTP request pipeline
-if (app.Environment.IsDevelopment())
-{
-    app.UseDeveloperExceptionPage();
-}
-else
-{
-    app.UseExceptionHandler("/Home/Error");
-    app.UseHsts();
-}
-
-app.UseHttpsRedirection();
-app.UseStaticFiles();
-
-app.UseRouting();
-
-// Enable CORS
-app.UseCors(MyAllowSpecificOrigins);
-
-app.UseAuthorization();
-
-app.MapControllers();
-
-app.Run();

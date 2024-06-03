@@ -1,12 +1,12 @@
 ﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.KernelMemory;
 using PersonalSiteBackend.Data;
 using RAGSystemAPI.Services;
+using System;
 
 public class Startup
 {
@@ -19,29 +19,44 @@ public class Startup
 
     public void ConfigureServices(IServiceCollection services)
     {
-        // Add CORS services and configure policy
         services.AddCors(options =>
         {
-            options.AddPolicy("AllowSpecificOrigin",
-                builder => builder.WithOrigins() 
-                    .AllowAnyHeader()
-                    .AllowAnyMethod()
-                    .AllowCredentials()); 
+            options.AddPolicy("_myAllowSpecificOrigins",
+                policy =>
+                {
+                    policy.WithOrigins("http://localhost:5173")
+                        .AllowAnyHeader()
+                        .AllowAnyMethod()
+                        .AllowCredentials();
+                });
         });
-        
-        services.AddDbContext<RagDbContext>(options =>
-            options.UseSqlite(Configuration.GetConnectionString("DefaultConnection")));
-        services.AddCors();
-        services.AddSingleton<MemoryServerless>(); 
-        services.AddSingleton<RagService>();
+
         services.AddControllers();
-        
+
+        // Log the connection string
+        var connectionString = Configuration.GetConnectionString("DefaultConnection");
+        Console.WriteLine($"Using connection string: {connectionString}");
+
+        // Configure DbContext with connection string
+        services.AddDbContext<RagDbContext>(options =>
+            options.UseSqlite(connectionString));
+
+        services.AddScoped<RagService>();
     }
 
     public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
     {
-        app.UseCors("AllowSpecificOrigin");
-        
+        // Ensure the database is created and apply migrations
+        using (var scope = app.ApplicationServices.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<RagDbContext>();
+            dbContext.Database.EnsureCreated();
+            dbContext.Database.Migrate();
+
+            var ragService = scope.ServiceProvider.GetRequiredService<RagService>();
+            ragService.LoadAllDataAsync().Wait();
+        }
+
         if (env.IsDevelopment())
         {
             app.UseDeveloperExceptionPage();
@@ -53,27 +68,13 @@ public class Startup
         }
 
         app.UseHttpsRedirection();
-        
         app.UseStaticFiles();
-
         app.UseRouting();
-        
+        app.UseCors("_myAllowSpecificOrigins");
         app.UseAuthorization();
-
-        app.UseCors("AllowOrigns");
-
         app.UseEndpoints(endpoints =>
         {
             endpoints.MapControllers();
         });
-        
-        using (var scope = app.ApplicationServices.CreateScope())
-        {
-            var dbContext = scope.ServiceProvider.GetRequiredService<RagDbContext>();
-            dbContext.Database.Migrate();
-            
-            var ragService = scope.ServiceProvider.GetRequiredService<RagService>();
-            ragService.LoadAllDataAsync().Wait();
-        }
     }
 }
