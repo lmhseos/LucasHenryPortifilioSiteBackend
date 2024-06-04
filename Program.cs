@@ -21,5 +21,6 @@ public class Program
             .ConfigureWebHostDefaults(webBuilder =>
             {
                 webBuilder.UseStartup<Startup>();
+                webBuilder.UseWebRoot("wwwroot"); // Ensure this points to the correct folder
             });
 }

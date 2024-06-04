@@ -63,7 +63,7 @@ public class Startup
         }
 
         app.UseHttpsRedirection();
-        app.UseStaticFiles();
+        app.UseStaticFiles(); // This line is crucial for serving static files
         app.UseRouting();
         app.UseCors("_myAllowSpecificOrigins");
         app.UseAuthorization();
