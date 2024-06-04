@@ -123,10 +123,6 @@ coverage/
 # Ignore local NuGet packages
 *.nupkg
 
-# Ignore Publish profiles
-*.pubxml
-*.publishsettings
-
 # Ignore temporary files
 *.tmp
 
