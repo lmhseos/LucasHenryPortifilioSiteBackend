@@ -20,9 +20,12 @@
 
     <ItemGroup>
         <None Remove="yourdatabase.db"/>
-        <Content Include="yourdatabase.db">
-            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-        </Content>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Content Update="Data\yourdatabase.db">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </Content>
     </ItemGroup>
 
 </Project>
