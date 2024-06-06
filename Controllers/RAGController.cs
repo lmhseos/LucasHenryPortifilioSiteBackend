@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using RAGSystemAPI.Services;
 using PersonalSiteBackend.Dto;
 using PersonalSiteBackend.DTO;
+using SQLitePCL;
 
 namespace RAGSystemAPI.Controllers
 {
@@ -32,5 +33,14 @@ namespace RAGSystemAPI.Controllers
             var result = await ragService.AskAsync(questionDto.Text);
             return Ok(result);
         }
+        [HttpPost("deleteDB")]
+        public async Task<IActionResult> DeleteDataBase()
+        {
+            
+          await ragService.ClearDataBase();
+          return Ok(new { Message = "Database successfully implemented" });
+          
+        }
+        
     }
 }

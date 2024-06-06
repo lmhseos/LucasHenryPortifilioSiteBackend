@@ -87,5 +87,11 @@ namespace RAGSystemAPI.Services
             }
         }
 
+        public async Task ClearDataBase()
+        {
+            var documents = _context.Documents.ToList();
+            _context.Documents.RemoveRange(documents);
+            await _context.SaveChangesAsync();
+        }
     }
 }
