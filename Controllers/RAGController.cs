@@ -38,7 +38,7 @@ namespace RAGSystemAPI.Controllers
         {
             
           await ragService.ClearDataBase();
-          return Ok(new { Message = "Database successfully implemented" });
+          return Ok(new { Message = "Database successfully deleted" });
           
         }
         
