@@ -45,8 +45,8 @@ public class Startup
         using (var scope = app.ApplicationServices.CreateScope())
         {
             var dbContext = scope.ServiceProvider.GetRequiredService<RagDbContext>();
-            //dbContext.Database.EnsureCreated();
-            //dbContext.Database.Migrate();
+            dbContext.Database.EnsureCreated();
+            dbContext.Database.Migrate();
 
             var ragService = scope.ServiceProvider.GetRequiredService<RagService>();
             ragService.LoadAllDataAsync().Wait();
