@@ -17,7 +17,8 @@ namespace RAGSystemAPI.Services
         {
             _context = context;
             DotEnv.Load();
-            var openApiKey = Environment.GetEnvironmentVariable("OPEN_API_KEY") ?? throw new InvalidOperationException("OPEN_API_KEY not found in environment variables");
+            var openApiKey = Environment.GetEnvironmentVariable("OPEN_API_KEY") ??
+                             throw new InvalidOperationException("OPEN_API_KEY not found in environment variables");
 
             _memory = new KernelMemoryBuilder()
                 .WithOpenAIDefaults(openApiKey)
@@ -53,7 +54,8 @@ namespace RAGSystemAPI.Services
 
         public async Task<Question> AskAsync(string input)
         {
-            if (string.IsNullOrWhiteSpace(input)) throw new ArgumentException("Input cannot be null or whitespace.", nameof(input));
+            if (string.IsNullOrWhiteSpace(input))
+                throw new ArgumentException("Input cannot be null or whitespace.", nameof(input));
 
             var answer = await _memory.AskAsync(input);
 
@@ -61,7 +63,8 @@ namespace RAGSystemAPI.Services
             {
                 Text = input,
                 Answer = answer.Result,
-                Sources = answer.RelevantSources.Select(x => $"{x.SourceName} - {x.Link} [{x.Partitions.First().LastUpdate:D}]").ToList()
+                Sources = answer.RelevantSources
+                    .Select(x => $"{x.SourceName} - {x.Link} [{x.Partitions.First().LastUpdate:D}]").ToList()
             };
 
             _context.Questions.Add(question);
@@ -72,15 +75,17 @@ namespace RAGSystemAPI.Services
 
         private static string NormalizePath(string path)
         {
-            if (string.IsNullOrWhiteSpace(path)) throw new ArgumentException("Path cannot be null or whitespace.", nameof(path));
-            
+            if (string.IsNullOrWhiteSpace(path))
+                throw new ArgumentException("Path cannot be null or whitespace.", nameof(path));
+
             return path.Replace("\\", "/").Trim();
         }
+
         public async Task LoadAllDataAsync()
         {
-           
+
             var documents = await _context.Documents.ToListAsync();
-            
+
             foreach (var document in documents)
             {
                 await _memory.ImportDocumentAsync(document.Name, document.Id.ToString());

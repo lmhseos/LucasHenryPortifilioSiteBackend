@@ -33,6 +33,7 @@ namespace RAGSystemAPI.Controllers
             var result = await ragService.AskAsync(questionDto.Text);
             return Ok(result);
         }
+        
         [HttpPost("deleteDB")]
         public async Task<IActionResult> DeleteDataBase()
         {
