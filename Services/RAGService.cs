@@ -1,14 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
+using System.Linq;
 using System.Threading.Tasks;
 using dotenv.net;
 using FirebaseAdmin;
 using Google.Apis.Auth.OAuth2;
 using Google.Cloud.Firestore;
 using Microsoft.Extensions.Configuration;
-using Microsoft.KernelMemory;
 using PersonalSiteBackend.DTO;
 using PersonalSiteBackend.Models;
 using Document = PersonalSiteBackend.Models.Document;
@@ -18,18 +15,16 @@ namespace RAGSystemAPI.Services
     public class RagService
     {
         private readonly FirestoreDb _firestoreDb;
-        private readonly MemoryServerless _memory;
+        private readonly ExtendedMemoryServerless _memory;
 
         public RagService(IConfiguration configuration)
         {
             DotEnv.Load();
 
-            // Set the environment variable for Google credentials
             string basePath = AppDomain.CurrentDomain.BaseDirectory;
             string credentialsPath = Path.Combine(basePath, "firebase.json");
             Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", credentialsPath);
 
-            // Initialize Firebase if not already initialized
             if (FirebaseApp.DefaultInstance == null)
             {
                 FirebaseApp.Create(new AppOptions
@@ -38,7 +33,6 @@ namespace RAGSystemAPI.Services
                 });
             }
 
-            // Get the project ID from the configuration
             var projectId = configuration["Firebase:ProjectId"];
             if (string.IsNullOrEmpty(projectId))
             {
@@ -50,40 +44,26 @@ namespace RAGSystemAPI.Services
             var openApiKey = Environment.GetEnvironmentVariable("OPEN_API_KEY") ??
                              throw new InvalidOperationException("OPEN_API_KEY not found in environment variables");
 
-            _memory = new KernelMemoryBuilder()
-                .WithOpenAIDefaults(openApiKey)
-                .Build<MemoryServerless>();
+            _memory = new ExtendedMemoryServerless(openApiKey);
         }
 
         public async Task ImportDocumentAsync(DocumentDto documentDto)
         {
             if (documentDto == null) throw new ArgumentNullException(nameof(documentDto));
 
-            string content;
-            var normalizedPath = NormalizePath(documentDto.Name);
-
-            if (normalizedPath.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
-            {
-                content = ExtractTextFromPdf(normalizedPath);
-            }
-            else
-            {
-                content = documentDto.Content ?? await File.ReadAllTextAsync(normalizedPath);
-            }
-
             var document = new Document
             {
                 Id = Guid.NewGuid().ToString(),
-                Name = normalizedPath,
-                Content = content
+                Name = documentDto.Name,
+                Content = documentDto.Content
             };
 
             DocumentReference docRef = _firestoreDb.Collection("documents").Document(document.Id);
             await docRef.SetAsync(document);
 
-            documentDto.Id = document.Id; // Assign the generated Id back to the DTO
+            documentDto.Id = document.Id;
 
-            await _memory.ImportDocumentAsync(document.Name, document.Id);
+            await _memory.ImportDocumentContentAsync(document.Content, document.Id);
         }
 
         public async Task<bool> IsDocumentReadyAsync(string documentId)
@@ -125,7 +105,9 @@ namespace RAGSystemAPI.Services
                 foreach (var doc in snapshot.Documents)
                 {
                     var document = doc.ConvertTo<Document>();
-                    await _memory.ImportDocumentAsync(document.Name, document.Id);
+                    Console.WriteLine($"Loading Document ID: {document.Id}, Content Length: {document.Content?.Length}");
+
+                    await ImportContentToMemory(document.Content, document.Id);
                 }
             }
             catch (Exception ex)
@@ -134,6 +116,12 @@ namespace RAGSystemAPI.Services
                 Console.WriteLine($"Error loading data from Firestore: {ex.Message}");
                 throw;
             }
+        }
+
+
+        private async Task ImportContentToMemory(string content, string documentId)
+        {
+            await _memory.ImportDocumentContentAsync(content, documentId);
         }
 
         public async Task ClearDataBase()
@@ -152,29 +140,6 @@ namespace RAGSystemAPI.Services
             foreach (var doc in snapshot.Documents)
             {
                 await doc.Reference.DeleteAsync();
-            }
-        }
-
-        private static string NormalizePath(string path)
-        {
-            if (string.IsNullOrWhiteSpace(path))
-                throw new ArgumentException("Path cannot be null or whitespace.", nameof(path));
-
-            return path.Replace("\\", "/").Trim();
-        }
-
-        private static string ExtractTextFromPdf(string path)
-        {
-            using (var document = UglyToad.PdfPig.PdfDocument.Open(path))
-            {
-                var text = new StringBuilder();
-
-                foreach (var page in document.GetPages())
-                {
-                    text.Append(page.Text);
-                }
-
-                return text.ToString();
             }
         }
     }

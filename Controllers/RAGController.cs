@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Mvc;
 using RAGSystemAPI.Services;
 using PersonalSiteBackend.DTO;
-using System.Threading.Tasks;
 using PersonalSiteBackend.Models;
 
 namespace RAGSystemAPI.Controllers
@@ -21,11 +20,6 @@ namespace RAGSystemAPI.Controllers
         [HttpPost("import")]
         public async Task<IActionResult> ImportDocument([FromBody] DocumentDto documentDto)
         {
-            if (string.IsNullOrWhiteSpace(documentDto.Name))
-            {
-                return BadRequest(new { Message = "The document name is required." });
-            }
-
             await _ragService.ImportDocumentAsync(documentDto);
 
             if (await _ragService.IsDocumentReadyAsync(documentDto.Id))
