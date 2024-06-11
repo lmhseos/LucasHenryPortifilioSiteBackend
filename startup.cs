@@ -31,10 +31,7 @@ public class Startup
         });
 
         services.AddControllers();
-
-        // Configure DbContext with connection string
-        services.AddDbContext<RagDbContext>(options =>
-            options.UseSqlite(Configuration.GetConnectionString("DefaultConnection")));
+        
 
         services.AddScoped<RagService>();
     }
@@ -44,10 +41,7 @@ public class Startup
         // Ensure the database is created and apply migrations
         using (var scope = app.ApplicationServices.CreateScope())
         {
-            var dbContext = scope.ServiceProvider.GetRequiredService<RagDbContext>();
-            dbContext.Database.EnsureCreated();
-            dbContext.Database.Migrate();
-
+            
             var ragService = scope.ServiceProvider.GetRequiredService<RagService>();
             ragService.LoadAllDataAsync().Wait();
         }

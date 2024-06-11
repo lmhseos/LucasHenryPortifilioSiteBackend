@@ -1,6 +1,14 @@
-﻿namespace PersonalSiteBackend.Dto;
+﻿using Google.Cloud.Firestore;
 
-public class AskQuestionDto
+namespace PersonalSiteBackend.Models
 {
-    public string Text { get; set; }
+    public class AskQuestionDTO
+    {
+        public string Text { get; set; }
+
+        public AskQuestionDTO()
+        {
+            // Parameterless constructor required for Firestore
+        }
+    }
 }

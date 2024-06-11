@@ -1,7 +1,15 @@
-﻿using dotenv.net;
-using Microsoft.EntityFrameworkCore;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using dotenv.net;
+using FirebaseAdmin;
+using Google.Apis.Auth.OAuth2;
+using Google.Cloud.Firestore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.KernelMemory;
-using PersonalSiteBackend.Data;
 using PersonalSiteBackend.DTO;
 using PersonalSiteBackend.Models;
 using Document = PersonalSiteBackend.Models.Document;
@@ -10,13 +18,34 @@ namespace RAGSystemAPI.Services
 {
     public class RagService
     {
-        private readonly RagDbContext _context;
+        private readonly FirestoreDb _firestoreDb;
         private readonly MemoryServerless _memory;
 
-        public RagService(RagDbContext context)
+        public RagService(IConfiguration configuration)
         {
-            _context = context;
             DotEnv.Load();
+            
+            string basePath = AppDomain.CurrentDomain.BaseDirectory;
+            string credentialsPath = Path.Combine(basePath, "firebase.json");
+            Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", credentialsPath);
+
+           
+            if (FirebaseApp.DefaultInstance == null)
+            {
+                FirebaseApp.Create(new AppOptions
+                {
+                    Credential = GoogleCredential.FromFile(credentialsPath)
+                });
+            }
+            
+            var projectId = configuration["Firebase:ProjectId"];
+            if (string.IsNullOrEmpty(projectId))
+            {
+                throw new InvalidOperationException("Firebase ProjectId is not configured.");
+            }
+
+            _firestoreDb = FirestoreDb.Create(projectId);
+
             var openApiKey = Environment.GetEnvironmentVariable("OPEN_API_KEY") ??
                              throw new InvalidOperationException("OPEN_API_KEY not found in environment variables");
 
@@ -29,27 +58,36 @@ namespace RAGSystemAPI.Services
         {
             if (documentDto == null) throw new ArgumentNullException(nameof(documentDto));
 
-            var normalizedPath = NormalizePath(documentDto.Name);
+            string content;
+            if (documentDto.Name.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
+            {
+                content = ExtractTextFromPdf(documentDto.Name);
+            }
+            else
+            {
+                content = documentDto.Content ?? await File.ReadAllTextAsync(documentDto.Name);
+            }
 
             var document = new Document
             {
-                Name = normalizedPath,
-                Content = documentDto.Content ?? await File.ReadAllTextAsync(normalizedPath)
+                Id = Guid.NewGuid().ToString(),
+                Name = NormalizePath(documentDto.Name),
+                Content = content
             };
 
-            _context.Documents.Add(document);
-            await _context.SaveChangesAsync();
+            DocumentReference docRef = _firestoreDb.Collection("documents").Document(document.Id);
+            await docRef.SetAsync(document);
 
-            documentDto.Id = document.Id;
+            documentDto.Id = document.Id; // Assign the generated Id back to the DTO
 
-            await _memory.ImportDocumentAsync(document.Name, document.Id.ToString());
+            await _memory.ImportDocumentAsync(document.Name, document.Id);
         }
 
-        public async Task<bool> IsDocumentReadyAsync(int? documentId)
+        public async Task<bool> IsDocumentReadyAsync(string documentId)
         {
-            if (documentId == null) throw new ArgumentNullException(nameof(documentId));
+            if (string.IsNullOrWhiteSpace(documentId)) throw new ArgumentNullException(nameof(documentId));
 
-            return await _memory.IsDocumentReadyAsync(documentId.ToString() ?? string.Empty);
+            return await _memory.IsDocumentReadyAsync(documentId);
         }
 
         public async Task<Question> AskAsync(string input)
@@ -61,14 +99,15 @@ namespace RAGSystemAPI.Services
 
             var question = new Question
             {
+                Id = Guid.NewGuid().ToString(),
                 Text = input,
                 Answer = answer.Result,
                 Sources = answer.RelevantSources
                     .Select(x => $"{x.SourceName} - {x.Link} [{x.Partitions.First().LastUpdate:D}]").ToList()
             };
 
-            _context.Questions.Add(question);
-            await _context.SaveChangesAsync();
+            DocumentReference docRef = _firestoreDb.Collection("questions").Document(question.Id);
+            await docRef.SetAsync(question);
 
             return question;
         }
@@ -81,22 +120,50 @@ namespace RAGSystemAPI.Services
             return path.Replace("\\", "/").Trim();
         }
 
+        private static string ExtractTextFromPdf(string path)
+        {
+            using (var document = UglyToad.PdfPig.PdfDocument.Open(path))
+            {
+                var text = new StringBuilder();
+
+                foreach (var page in document.GetPages())
+                {
+                    text.Append(page.Text);
+                }
+
+                return text.ToString();
+            }
+        }
+
         public async Task LoadAllDataAsync()
         {
+            CollectionReference documents = _firestoreDb.Collection("documents");
+            QuerySnapshot snapshot = await documents.GetSnapshotAsync();
 
-            var documents = await _context.Documents.ToListAsync();
-
-            foreach (var document in documents)
+            foreach (var doc in snapshot.Documents)
             {
-                await _memory.ImportDocumentAsync(document.Name, document.Id.ToString());
+                var document = doc.ConvertTo<Document>();
+                await _memory.ImportDocumentAsync(document.Name, document.Id);
             }
         }
 
         public async Task ClearDataBase()
         {
-            var documents = _context.Documents.ToList();
-            _context.Documents.RemoveRange(documents);
-            await _context.SaveChangesAsync();
+            CollectionReference documents = _firestoreDb.Collection("documents");
+            QuerySnapshot snapshot = await documents.GetSnapshotAsync();
+
+            foreach (var doc in snapshot.Documents)
+            {
+                await doc.Reference.DeleteAsync();
+            }
+
+            CollectionReference questions = _firestoreDb.Collection("questions");
+            snapshot = await questions.GetSnapshotAsync();
+
+            foreach (var doc in snapshot.Documents)
+            {
+                await doc.Reference.DeleteAsync();
+            }
         }
     }
 }

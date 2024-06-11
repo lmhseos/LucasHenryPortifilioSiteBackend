@@ -1,22 +1,34 @@
 ﻿using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using RAGSystemAPI.Services;
-using PersonalSiteBackend.Dto;
 using PersonalSiteBackend.DTO;
-using SQLitePCL;
+using System.Threading.Tasks;
+using PersonalSiteBackend.Models;
 
 namespace RAGSystemAPI.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class RagController(RagService ragService) : ControllerBase
+    public class RagController : ControllerBase
     {
+        private readonly RagService _ragService;
+
+        public RagController(RagService ragService)
+        {
+            _ragService = ragService;
+        }
+
         [HttpPost("import")]
         public async Task<IActionResult> ImportDocument([FromBody] DocumentDto documentDto)
         {
-            await ragService.ImportDocumentAsync(documentDto);
+            if (string.IsNullOrWhiteSpace(documentDto.Name))
+            {
+                return BadRequest(new { Message = "The document name is required." });
+            }
 
-            if (await ragService.IsDocumentReadyAsync(documentDto.Id))
+            await _ragService.ImportDocumentAsync(documentDto);
+
+            if (await _ragService.IsDocumentReadyAsync(documentDto.Id))
             {
                 return Ok(new { Message = "Document imported successfully." });
             }
@@ -28,20 +40,17 @@ namespace RAGSystemAPI.Controllers
 
         [HttpPost("ask")]
         [EnableCors("AllowSpecificOrigin")]
-        public async Task<IActionResult> AskQuestion([FromBody] AskQuestionDto questionDto)
+        public async Task<IActionResult> AskQuestion([FromBody] AskQuestionDTO questionDto)
         {
-            var result = await ragService.AskAsync(questionDto.Text);
+            var result = await _ragService.AskAsync(questionDto.Text);
             return Ok(result);
         }
-        
+
         [HttpPost("deleteDB")]
         public async Task<IActionResult> DeleteDataBase()
         {
-            
-          await ragService.ClearDataBase();
-          return Ok(new { Message = "Database successfully deleted" });
-          
+            await _ragService.ClearDataBase();
+            return Ok(new { Message = "Database successfully deleted" });
         }
-        
     }
 }
