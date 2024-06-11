@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -30,8 +29,6 @@ public class Startup
         });
 
         services.AddControllers();
-        
-
         services.AddScoped<RagService>();
     }
 
@@ -40,7 +37,6 @@ public class Startup
         // Ensure the database is created and apply migrations
         using (var scope = app.ApplicationServices.CreateScope())
         {
-            
             var ragService = scope.ServiceProvider.GetRequiredService<RagService>();
             ragService.LoadAllDataAsync().Wait();
         }
@@ -56,7 +52,7 @@ public class Startup
         }
 
         app.UseHttpsRedirection();
-        app.UseStaticFiles(); // This line is crucial for serving static files
+        app.UseStaticFiles();
         app.UseRouting();
         app.UseCors("_myAllowSpecificOrigins");
         app.UseAuthorization();
