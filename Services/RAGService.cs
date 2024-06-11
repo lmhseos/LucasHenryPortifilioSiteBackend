@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 using dotenv.net;
@@ -116,13 +117,22 @@ namespace RAGSystemAPI.Services
 
         public async Task LoadAllDataAsync()
         {
-            CollectionReference documents = _firestoreDb.Collection("documents");
-            QuerySnapshot snapshot = await documents.GetSnapshotAsync();
-
-            foreach (var doc in snapshot.Documents)
+            try
             {
-                var document = doc.ConvertTo<Document>();
-                await _memory.ImportDocumentAsync(document.Name, document.Id);
+                CollectionReference documents = _firestoreDb.Collection("documents");
+                QuerySnapshot snapshot = await documents.GetSnapshotAsync();
+
+                foreach (var doc in snapshot.Documents)
+                {
+                    var document = doc.ConvertTo<Document>();
+                    await _memory.ImportDocumentAsync(document.Name, document.Id);
+                }
+            }
+            catch (Exception ex)
+            {
+                // Log the exception
+                Console.WriteLine($"Error loading data from Firestore: {ex.Message}");
+                throw;
             }
         }
 
