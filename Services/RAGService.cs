@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using dotenv.net;
@@ -24,12 +22,13 @@ namespace RAGSystemAPI.Services
         public RagService(IConfiguration configuration)
         {
             DotEnv.Load();
-            
+
+            // Set the environment variable for Google credentials
             string basePath = AppDomain.CurrentDomain.BaseDirectory;
             string credentialsPath = Path.Combine(basePath, "firebase.json");
             Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", credentialsPath);
 
-           
+            // Initialize Firebase if not already initialized
             if (FirebaseApp.DefaultInstance == null)
             {
                 FirebaseApp.Create(new AppOptions
@@ -37,7 +36,8 @@ namespace RAGSystemAPI.Services
                     Credential = GoogleCredential.FromFile(credentialsPath)
                 });
             }
-            
+
+            // Get the project ID from the configuration
             var projectId = configuration["Firebase:ProjectId"];
             if (string.IsNullOrEmpty(projectId))
             {
@@ -59,19 +59,21 @@ namespace RAGSystemAPI.Services
             if (documentDto == null) throw new ArgumentNullException(nameof(documentDto));
 
             string content;
-            if (documentDto.Name.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
+            var normalizedPath = NormalizePath(documentDto.Name);
+
+            if (normalizedPath.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
             {
-                content = ExtractTextFromPdf(documentDto.Name);
+                content = ExtractTextFromPdf(normalizedPath);
             }
             else
             {
-                content = documentDto.Content ?? await File.ReadAllTextAsync(documentDto.Name);
+                content = documentDto.Content ?? await File.ReadAllTextAsync(normalizedPath);
             }
 
             var document = new Document
             {
                 Id = Guid.NewGuid().ToString(),
-                Name = NormalizePath(documentDto.Name),
+                Name = normalizedPath,
                 Content = content
             };
 
@@ -112,29 +114,6 @@ namespace RAGSystemAPI.Services
             return question;
         }
 
-        private static string NormalizePath(string path)
-        {
-            if (string.IsNullOrWhiteSpace(path))
-                throw new ArgumentException("Path cannot be null or whitespace.", nameof(path));
-
-            return path.Replace("\\", "/").Trim();
-        }
-
-        private static string ExtractTextFromPdf(string path)
-        {
-            using (var document = UglyToad.PdfPig.PdfDocument.Open(path))
-            {
-                var text = new StringBuilder();
-
-                foreach (var page in document.GetPages())
-                {
-                    text.Append(page.Text);
-                }
-
-                return text.ToString();
-            }
-        }
-
         public async Task LoadAllDataAsync()
         {
             CollectionReference documents = _firestoreDb.Collection("documents");
@@ -163,6 +142,29 @@ namespace RAGSystemAPI.Services
             foreach (var doc in snapshot.Documents)
             {
                 await doc.Reference.DeleteAsync();
+            }
+        }
+
+        private static string NormalizePath(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+                throw new ArgumentException("Path cannot be null or whitespace.", nameof(path));
+
+            return path.Replace("\\", "/").Trim();
+        }
+
+        private static string ExtractTextFromPdf(string path)
+        {
+            using (var document = UglyToad.PdfPig.PdfDocument.Open(path))
+            {
+                var text = new StringBuilder();
+
+                foreach (var page in document.GetPages())
+                {
+                    text.Append(page.Text);
+                }
+
+                return text.ToString();
             }
         }
     }
