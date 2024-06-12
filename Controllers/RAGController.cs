@@ -8,6 +8,7 @@ namespace RAGSystemAPI.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Produces("application/json")]
     public class RagController : ControllerBase
     {
         private readonly RagService _ragService;
@@ -33,9 +34,9 @@ namespace RAGSystemAPI.Controllers
         }
 
         [HttpPost("ask")]
-        [EnableCors("AllowSpecificOrigin")]
         public async Task<IActionResult> AskQuestion([FromBody] AskQuestionDTO questionDto)
         {
+            
             var result = await _ragService.AskAsync(questionDto.Text);
             return Ok(result);
         }

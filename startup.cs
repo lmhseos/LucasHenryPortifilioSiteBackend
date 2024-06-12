@@ -18,13 +18,13 @@ public class Startup
     {
         services.AddCors(options =>
         {
-            options.AddPolicy("_myAllowSpecificOrigins",
-                policy =>
+            options.AddPolicy("AllowSpecificOrigins",
+                builder =>
                 {
-                    policy.WithOrigins("http://localhost:5173")
-                        .AllowAnyHeader()
+                    builder
+                        .WithOrigins("http://localhost:5173", "https://lucas-henry-portfolio-site-git-personal-68762e-lmhseos-projects.vercel.app/")
                         .AllowAnyMethod()
-                        .AllowCredentials();
+                        .AllowAnyHeader();
                 });
         });
 
@@ -53,9 +53,14 @@ public class Startup
 
         app.UseHttpsRedirection();
         app.UseStaticFiles();
+
         app.UseRouting();
-        app.UseCors("_myAllowSpecificOrigins");
+
+        // Apply CORS policy before any other middleware
+        app.UseCors("AllowSpecificOrigins");
+
         app.UseAuthorization();
+
         app.UseEndpoints(endpoints =>
         {
             endpoints.MapControllers();
