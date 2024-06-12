@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using dotenv.net;
@@ -6,6 +7,7 @@ using FirebaseAdmin;
 using Google.Apis.Auth.OAuth2;
 using Google.Cloud.Firestore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.KernelMemory;
 using PersonalSiteBackend.DTO;
 using PersonalSiteBackend.Models;
 using Document = PersonalSiteBackend.Models.Document;
@@ -15,16 +17,18 @@ namespace RAGSystemAPI.Services
     public class RagService
     {
         private readonly FirestoreDb _firestoreDb;
-        private readonly ExtendedMemoryServerless _memory;
+        private readonly MemoryServerless _memory;
 
         public RagService(IConfiguration configuration)
         {
             DotEnv.Load();
 
+            // Set the environment variable for Google credentials
             string basePath = AppDomain.CurrentDomain.BaseDirectory;
             string credentialsPath = Path.Combine(basePath, "firebase.json");
             Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", credentialsPath);
 
+            // Initialize Firebase if not already initialized
             if (FirebaseApp.DefaultInstance == null)
             {
                 FirebaseApp.Create(new AppOptions
@@ -33,6 +37,7 @@ namespace RAGSystemAPI.Services
                 });
             }
 
+            // Get the project ID from the configuration
             var projectId = configuration["Firebase:ProjectId"];
             if (string.IsNullOrEmpty(projectId))
             {
@@ -44,7 +49,9 @@ namespace RAGSystemAPI.Services
             var openApiKey = Environment.GetEnvironmentVariable("OPEN_API_KEY") ??
                              throw new InvalidOperationException("OPEN_API_KEY not found in environment variables");
 
-            _memory = new ExtendedMemoryServerless(openApiKey);
+            _memory = new KernelMemoryBuilder()
+                .WithOpenAIDefaults(openApiKey)
+                .Build<MemoryServerless>();
         }
 
         public async Task ImportDocumentAsync(DocumentDto documentDto)
@@ -61,9 +68,16 @@ namespace RAGSystemAPI.Services
             DocumentReference docRef = _firestoreDb.Collection("documents").Document(document.Id);
             await docRef.SetAsync(document);
 
-            documentDto.Id = document.Id;
+            documentDto.Id = document.Id; // Assign the generated Id back to the DTO
 
-            await _memory.ImportDocumentContentAsync(document.Content, document.Id);
+            // Create a temporary file with a .txt extension
+            var tempFilePath = Path.GetTempFileName() + ".txt";
+            await File.WriteAllTextAsync(tempFilePath, document.Content);
+
+            await _memory.ImportDocumentAsync(tempFilePath, document.Id);
+
+            // Clean up the temporary file
+            File.Delete(tempFilePath);
         }
 
         public async Task<bool> IsDocumentReadyAsync(string documentId)
@@ -105,9 +119,18 @@ namespace RAGSystemAPI.Services
                 foreach (var doc in snapshot.Documents)
                 {
                     var document = doc.ConvertTo<Document>();
-                    Console.WriteLine($"Loading Document ID: {document.Id}, Content Length: {document.Content?.Length}");
+                    Console.WriteLine($"Loading document: {document.Id}, Content Length: {document.Content?.Length}");
 
-                    await ImportContentToMemory(document.Content, document.Id);
+                    // Create a temporary file with a .txt extension
+                    var tempFilePath = Path.GetTempFileName() + ".txt";
+                    await File.WriteAllTextAsync(tempFilePath, document.Content);
+
+                    await _memory.ImportDocumentAsync(tempFilePath, document.Id);
+
+                    // Clean up the temporary file
+                    File.Delete(tempFilePath);
+
+                    Console.WriteLine($"Imported document: {document.Id}");
                 }
             }
             catch (Exception ex)
@@ -116,12 +139,6 @@ namespace RAGSystemAPI.Services
                 Console.WriteLine($"Error loading data from Firestore: {ex.Message}");
                 throw;
             }
-        }
-
-
-        private async Task ImportContentToMemory(string content, string documentId)
-        {
-            await _memory.ImportDocumentContentAsync(content, documentId);
         }
 
         public async Task ClearDataBase()
