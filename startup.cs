@@ -22,7 +22,7 @@ public class Startup
                 builder =>
                 {
                     builder
-                        .WithOrigins("http://localhost:5173", "https://lucas-henry-portfolio-site-git-personal-68762e-lmhseos-projects.vercel.app/")
+                        .WithOrigins("http://localhost:5173", "https://lucas-henry-portfolio-site-git-personal-68762e-lmhseos-projects.vercel.app")
                         .AllowAnyMethod()
                         .AllowAnyHeader();
                 });
